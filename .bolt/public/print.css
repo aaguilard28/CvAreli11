@@ -1,0 +1,134 @@
+/* ===========================
+   IMPRESIÓN NATIVA – LETTER
+   =========================== */
+
+@page {
+  /* Tamaño carta (Letter) */
+  size: Letter;
+  /* Deja 0 para que no recorte bordes del layout;
+     el respiro lo da tu propio padding/márgenes de la UI */
+  margin: 0;
+}
+
+@media print {
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+
+    /* Colores fieles en impresión (fondos y bordes incluidos) */
+    -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+
+    /* No forzamos blanco para respetar CLARO/OSCURO */
+    background: inherit !important;
+  }
+
+  /* La barra lateral NO se oculta: la dejamos estática para evitar un hueco arriba/izquierda */
+  .app-nav {
+    position: static !important;
+    inset: auto !important;
+    width: auto !important;
+    height: auto !important;
+    transform: none !important;
+  }
+
+  /* Como la nav deja de ser fija, eliminamos el padding de compensación (pt-14) en la franja superior */
+  .pt-14 { padding-top: 0 !important; }
+  /* (si usas otra clase de compensación en móvil, añade aquí su selector) */
+
+  /* Evitar cortes feos dentro de bloques, listas y tablas */
+  .cv-section,
+  .cv-break,
+  .avoid-break,
+  .card,
+  .card * ,
+  table, tr, td, th,
+  ul, ol, li,
+  pre, code, blockquote,
+  h1, h2, h3, h4, h5, h6 {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Evitar cortes en elementos de grids comunes (tarjetas/columns) */
+  .grid > * {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Títulos no “huérfanos” */
+  .cv-section > h2,
+  .cv-section .section-title,
+  .cv-section .header,
+  .cv-section .border-b {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* Repetir cabeceras/pies de tabla en cada página (cuando existan) */
+  thead { display: table-header-group !important; }
+  tfoot { display: table-footer-group  !important; }
+
+  /* Saltos manuales si algún día quisieras usarlos */
+  .page-break {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  /* Neutralizar posiciones que causan repetición en cada hoja */
+  .sticky, .fixed,
+  [style*="position: sticky"],
+  [style*="position:fixed"] {
+    position: static !important;
+    top: auto !important; left: auto !important; right: auto !important; bottom: auto !important;
+  }
+
+  /* Quitar animaciones/transforms que rompen la captura (incluye marquee) */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    /* Mantenemos sombras para respetar diseño; si tu impresora las apaga, puedes descomentarlo
+       box-shadow: none !important;
+       text-shadow: none !important;
+    */
+  }
+  .marquee-container,
+  .marquee-container * {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  /* Medios embebidos: no partir y ajustar ancho */
+  img, svg, canvas, video {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid;
+  }
+
+  /* Respetar tema: no forzar blanco en modo oscuro */
+  .dark, [data-theme="dark"] {
+    background: inherit !important;
+    color: inherit !important;
+    filter: none !important;
+  }
+
+  /* Evitar que algunos navegadores agreguen la URL después de los enlaces */
+  a[href]::after { content: "" !important; }
+
+  /* Asegurar contenedores principales sin clip por overflow en impresión */
+  main, .cv-section {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Opcional: soporte para mostrar sólo en la primera hoja si usas estas clases */
+  .only-first-page { display: block !important; }
+  .after-first-page { display: none !important; }
+
+  /* Dejar aire antes de que termine la hoja en la sección de Contacto,
+     si tu layout lo necesita */
+  #contacto {
+    margin-bottom: 14mm !important;
+  }
+}

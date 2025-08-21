@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Animación personalizada para el título */
+@keyframes pulseGlow {
+  0% { text-shadow: 0 0 0px #ffd700; }
+  50% { text-shadow: 0 0 12px #ffd700, 0 0 24px #ffd700; }
+  100% { text-shadow: 0 0 0px #ffd700; }
+}
+.animate-pulse-glow { animation: pulseGlow 2s infinite; }
+
+/* Glow dorado suave */
+.glow-gold {
+  color: #ffd700;
+  text-shadow: 0 0 3px #ffd700, 0 0 6px #ffcc00, 0 0 9px #ff9900, 0 0 12px #ffcc00;
+  animation: glowFlicker 1.8s infinite alternate;
+}
+@keyframes glowFlicker {
+  0% {
+    opacity: .85;
+    text-shadow: 0 0 3px #ffcc00, 0 0 6px #ff9900, 0 0 9px #ffcc00;
+  }
+  100% {
+    opacity: 1;
+    text-shadow: 0 0 5px #ffd700, 0 0 10px #ffaa00, 0 0 15px #ff9900;
+  }
+}
+
+/* ---------- Ajustes adicionales ---------- */
+html.dark { color-scheme: dark; }
+
+/* Competencias: contraste en modo oscuro (usado por .competencia-btn en App.tsx) */
+.dark .competencia-btn {
+  color: #fff !important;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.dark .competencia-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Tooltip: colores EXACTOS (claro/oscuro) */
+.tooltip-content {
+  background-color:#a8c0d9 !important;
+  color:#0f172a !important;
+  border:1px solid #93a8c3 !important;
+}
+.dark .tooltip-content {
+  background-color:#475569 !important;
+  color:#fff !important;
+  border:1px solid #94A3B8 !important;
+}
+
+/* Captura PDF: estirar el lateral azul (nav .app-nav) solo durante la captura con html2canvas */
+.capture-pdf .app-nav {
+  position: absolute !important;
+  top: 0; left: 0;
+  height: 100% !important;
+  min-height: 100% !important;
+}
+
+/* ======== Ajustes globales para impresión/PDF ======== */
+html, body {
+  -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+}
+
+@media print {
+  html, body {
+    overflow: visible !important;
+    height: auto !important;
+  }
+}
+
