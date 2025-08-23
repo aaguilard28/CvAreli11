@@ -1,0 +1,225 @@
+/* PDF Export Styles - Optimized for print and programmatic export */
+
+@media print {
+  /* Global print settings */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    background: white !important;
+  }
+
+  /* Hide elements that shouldn't appear in PDF */
+  .no-print,
+  .cv-builder-panel,
+  .edit-controls,
+  button:not(.print-keep),
+  input,
+  textarea,
+  select,
+  .tooltip,
+  .dropdown-menu {
+    display: none !important;
+  }
+
+  /* Main container adjustments */
+  .cv-container {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    page-break-inside: avoid;
+  }
+
+  /* Navigation (sidebar) styling for PDF */
+  .app-nav {
+    position: static !important;
+    width: 280px !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    float: left;
+    page-break-inside: avoid;
+  }
+
+  /* Main content area */
+  main {
+    margin-left: 280px !important;
+    padding: 0 !important;
+    width: calc(100% - 280px) !important;
+  }
+
+  /* Section spacing and breaks */
+  .cv-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 2rem !important;
+  }
+
+  .cv-section h2 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Experience and project cards */
+  .cv-break {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 1.5rem !important;
+  }
+
+  /* Ensure collapsible content is visible */
+  [data-collapsible-content="true"] {
+    max-height: none !important;
+    height: auto !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+  }
+
+  /* Typography improvements */
+  h1, h2, h3, h4, h5, h6 {
+    color: inherit !important;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  p, li {
+    color: inherit !important;
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Links styling */
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  /* Remove animations and transforms */
+  * {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+
+  /* Background colors and borders */
+  .bg-white, .dark\:bg-gray-900 {
+    background-color: white !important;
+  }
+
+  .bg-gray-50, .dark\:bg-gray-800 {
+    background-color: #f9fafb !important;
+  }
+
+  .bg-blue-50, .dark\:bg-blue-900 {
+    background-color: #eff6ff !important;
+  }
+
+  /* Text colors for print */
+  .text-white, .dark\:text-white {
+    color: white !important;
+  }
+
+  .text-gray-900, .dark\:text-gray-100 {
+    color: #111827 !important;
+  }
+
+  .text-gray-600, .dark\:text-gray-400 {
+    color: #4b5563 !important;
+  }
+
+  /* Preserve important visual elements */
+  .shadow-lg, .shadow-xl {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Marquee and animations */
+  .marquee-container {
+    animation: none !important;
+  }
+
+  /* Navigation specific adjustments */
+  .static-name {
+    display: block !important;
+  }
+
+  .typing-cursor {
+    display: none !important;
+  }
+
+  /* Skills and competencies */
+  .competencia-btn {
+    border: 1px solid #d1d5db !important;
+    background-color: #f9fafb !important;
+    color: #374151 !important;
+  }
+
+  /* Contact cards and other interactive elements */
+  .hover\:shadow-lg:hover {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 0.5in;
+    size: A4;
+  }
+
+  /* First page adjustments */
+  .cv-container {
+    margin-top: 0 !important;
+  }
+}
+
+/* Capture PDF class - used during html2canvas capture */
+.capture-pdf {
+  /* Ensure proper positioning during capture */
+  .app-nav {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    z-index: 1;
+  }
+
+  main {
+    margin-left: 280px !important;
+    position: relative !important;
+    z-index: 2;
+  }
+
+  /* Remove shadows and effects that don't capture well */
+  .shadow-lg, .shadow-xl, .shadow-2xl {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Ensure text is crisp */
+  * {
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+  }
+
+  /* Remove transforms and animations */
+  * {
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Ensure collapsibles are open */
+  [data-collapsible-content="true"] {
+    max-height: none !important;
+    height: auto !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+  }
+}

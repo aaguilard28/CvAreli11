@@ -59,6 +59,42 @@ html.dark { color-scheme: dark; }
   min-height: 100% !important;
 }
 
+/* ======== Theme CSS Variables ======== */
+:root {
+  --theme-primary: #1e2a38;
+  --theme-secondary: #4a688b;
+  --theme-accent: #ffd700;
+  --theme-text: #1f2937;
+  --theme-background: #ffffff;
+}
+
+/* Corporate Theme */
+.theme-corporate {
+  --theme-primary: #1f2937;
+  --theme-secondary: #374151;
+  --theme-accent: #3b82f6;
+  --theme-text: #111827;
+  --theme-background: #f9fafb;
+}
+
+/* Tech Theme */
+.theme-tech {
+  --theme-primary: #0f172a;
+  --theme-secondary: #1e293b;
+  --theme-accent: #06d6a0;
+  --theme-text: #0f172a;
+  --theme-background: #f8fafc;
+}
+
+/* Creative Theme */
+.theme-creative {
+  --theme-primary: #581c87;
+  --theme-secondary: #7c3aed;
+  --theme-accent: #f59e0b;
+  --theme-text: #1f2937;
+  --theme-background: #fefefe;
+}
+
 /* ======== Ajustes globales para impresión/PDF ======== */
 html, body {
   -webkit-print-color-adjust: exact;

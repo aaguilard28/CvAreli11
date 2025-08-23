@@ -2,15 +2,10 @@ import { useState, useEffect, useLayoutEffect, useRef, forwardRef, ReactNode } f
 import {
   User, Briefcase, GraduationCap, Globe, Zap, Brain, Landmark, FileText, HardHat, Users,
   BarChart, Gem, Lightbulb, Info, Settings, Bot, Handshake, BookOpen, Flag, LayoutDashboard,
-  CheckCircle, HeartHandshake, Phone, Mail, Linkedin, ArrowRight, Sun, Moon, Download, Edit3
+  CheckCircle, HeartHandshake, Phone, Mail, Linkedin, ArrowRight, Sun, Moon, Download
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-
-// CV Builder imports
-import { CVProvider, useCVContext } from './modules/cv/CVProvider';
-import { CVBuilder } from './modules/cv/components/CVBuilder';
-import { pdfExportService } from './modules/cv/export/pdfExport';
 
 /* ================== DATA (textos restaurados tal cual capturas) ================== */
 const portfolioData = {
@@ -254,7 +249,6 @@ const Navigation = ({
   isDark,
   toggleDark,
   onDownloadPDF,
-  onShowBuilder,
 }: {
   activeSection: string;
   onNavigate: (id: string) => void;
@@ -263,7 +257,6 @@ const Navigation = ({
   isDark: boolean;
   toggleDark: () => void;
   onDownloadPDF: () => void;
-  onShowBuilder?: () => void;
 }) => {
   const sections = [
     { id: 'perfil', title: 'Perfil Profesional', icon: <User size={20} /> },
@@ -302,22 +295,6 @@ const Navigation = ({
                 >
                   {isDark ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
-                {onShowBuilder && (
-                  <div className="relative group">
-                    <button
-                      type="button"
-                      onClick={onShowBuilder}
-                      className="w-9 h-9 rounded-full border border-white/30 flex items-center justify-center hover:bg-white/10 transition focus:outline-none bg-blue-600/20"
-                      aria-label="Editar CV"
-                      title="Editar CV"
-                    >
-                      <Edit3 size={18} />
-                    </button>
-                    <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1 opacity-0 group-hover:opacity-100 transition bg-white/90 text-[#1e2a38] dark:bg-slate-700 dark:text-white text-xs font-medium px-2 py-1 rounded shadow">
-                      Editar CV
-                    </span>
-                  </div>
-                )}
                 <div className="relative group">
                   <button
                     type="button"
@@ -347,17 +324,6 @@ const Navigation = ({
             >
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            {onShowBuilder && (
-              <button
-                type="button"
-                onClick={onShowBuilder}
-                className="w-8 h-8 rounded-full border border-white/30 bg-blue-600/20 flex items-center justify-center hover:bg-white/10 transition focus:outline-none"
-                aria-label="Editar CV"
-                title="Editar CV"
-              >
-                <Edit3 size={16} />
-              </button>
-            )}
             <button
               type="button"
               onClick={onDownloadPDF}
@@ -963,242 +929,6 @@ const App = () => {
         </Section>
       </main>
     </div>
-  );
-};
-
-// CV Builder Integration - CV Component using context data
-const CVWithBuilder = () => {
-  const { currentVersion, sections } = useCVContext();
-  const [showCVBuilder, setShowCVBuilder] = useState(false);
-
-  // Use current version data if available, otherwise use default portfolioData
-  const cvData = currentVersion?.data || portfolioData;
-  
-  // Filter sections based on configuration
-  const enabledSections = sections.filter(section => section.enabled);
-
-  return (
-    <>
-      <CVComponent 
-        portfolioData={cvData} 
-        enabledSections={enabledSections}
-        onShowBuilder={() => setShowCVBuilder(true)}
-      />
-      {showCVBuilder && (
-        <CVBuilder 
-          onClose={() => setShowCVBuilder(false)} 
-          isDark={document.documentElement.classList.contains('dark')}
-        />
-      )}
-    </>
-  );
-};
-
-// Modified CV Component to accept dynamic data
-const CVComponent = ({ 
-  portfolioData, 
-  enabledSections, 
-  onShowBuilder 
-}: { 
-  portfolioData: any; 
-  enabledSections: any[]; 
-  onShowBuilder: () => void; 
-}) => {
-  const [activeSection, setActiveSection] = useState('perfil');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isDark, setIsDark] = useState(false);
-  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-
-  useLayoutEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setIsDark(savedTheme === 'dark');
-      if (savedTheme === 'dark') {
-        document.documentElement.classList.add('dark');
-      }
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setIsDark(true);
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
-
-  const toggleDark = () => {
-    const newIsDark = !isDark;
-    setIsDark(newIsDark);
-    if (newIsDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  };
-
-  const handleDownloadPDF = async () => {
-    try {
-      await pdfExportService.exportPDF();
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      alert('Error al generar el PDF. Por favor, intenta nuevamente.');
-    }
-  };
-
-  const navigateToSection = (sectionId: string) => {
-    const element = sectionRefs.current[sectionId];
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-      setActiveSection(sectionId);
-    }
-    setIsMobileMenuOpen(false);
-  };
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  useEffect(() => {
-    const handleScroll = () => {
-      let current = 'perfil';
-      
-      Object.entries(sectionRefs.current).forEach(([id, element]) => {
-        if (element) {
-          const rect = element.getBoundingClientRect();
-          if (rect.top <= 200) {
-            current = id;
-          }
-        }
-      });
-      
-      setActiveSection(current);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  return (
-    <div className="cv-container min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-      <Navigation
-        activeSection={activeSection}
-        onNavigate={navigateToSection}
-        isMobileMenuOpen={isMobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        isDark={isDark}
-        toggleDark={toggleDark}
-        onDownloadPDF={handleDownloadPDF}
-        onShowBuilder={onShowBuilder}
-      />
-
-      <main className="lg:ml-80 p-6 lg:p-12 space-y-12">
-        {/* Only render enabled sections */}
-        {enabledSections
-          .sort((a, b) => a.order - b.order)
-          .map((sectionConfig) => {
-            const sectionId = sectionConfig.id;
-            
-            if (sectionId === 'perfil') {
-              return (
-                <Section key={sectionId} ref={(el) => (sectionRefs.current.perfil = el)} id="perfil" title="Perfil Profesional">
-                  <div className="space-y-6">
-                    {portfolioData.profile.map((item: any, index: number) => (
-                      <div key={index} className="flex items-start gap-6 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-                        <div className="flex-shrink-0 p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
-                          <div className="text-blue-600 dark:text-blue-400">
-                            {item.icon}
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                            {item.text}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <MarqueeCarousel />
-                </Section>
-              );
-            }
-            
-            if (sectionId === 'habilidades') {
-              return (
-                <Section key={sectionId} ref={(el) => (sectionRefs.current.habilidades = el)} id="habilidades" title="Habilidades Destacadas">
-                  <div className="grid lg:grid-cols-2 gap-8">
-                    <SkillsTooltips skills={Object.keys(portfolioData.skills.tooltips)} tooltips={portfolioData.skills.tooltips} />
-                    <ManagementSkills skills={portfolioData.skills.management} />
-                  </div>
-                </Section>
-              );
-            }
-            
-            if (sectionId === 'experiencia') {
-              return (
-                <Section key={sectionId} ref={(el) => (sectionRefs.current.experiencia = el)} id="experiencia" title="Experiencia Profesional">
-                  {portfolioData.experience.map((exp: any, index: number) => (
-                    <CollapsibleExperience key={index} date={exp.date} title={exp.title} company={exp.company} location={exp.location} description={exp.description} icon={exp.icon} />
-                  ))}
-                </Section>
-              );
-            }
-            
-            if (sectionId === 'proyectos') {
-              return (
-                <Section key={sectionId} ref={(el) => (sectionRefs.current.proyectos = el)} id="proyectos" title="Proyectos de Innovación y Transformación Digital">
-                  {portfolioData.projects.map((project: any, index: number) => (
-                    <CollapsibleExperience key={index} date={project.date} title={project.title} description={project.description} icon={project.icon} />
-                  ))}
-                </Section>
-              );
-            }
-            
-            if (sectionId === 'educacion') {
-              return (
-                <Section key={sectionId} ref={(el) => (sectionRefs.current.educacion = el)} id="educacion" title="Educación Académica">
-                  {portfolioData.education.map((edu: any, index: number) => (
-                    <EducationCard key={index} icon={edu.icon} iconColor={edu.iconColor} title={edu.title} period={edu.period} description={edu.description} />
-                  ))}
-                  <OtherStudies items={portfolioData.otherStudies} />
-                </Section>
-              );
-            }
-            
-            if (sectionId === 'idiomas') {
-              return (
-                <Section key={sectionId} ref={(el) => (sectionRefs.current.idiomas = el)} id="idiomas" title="Idiomas">
-                  <div className="flex flex-col md:flex-row gap-4">
-                    {portfolioData.languages.map((lang: any, index: number) => (
-                      <LanguageCard key={index} language={lang.language} proficiency={lang.proficiency} />
-                    ))}
-                  </div>
-                </Section>
-              );
-            }
-            
-            if (sectionId === 'contacto') {
-              return (
-                <Section key={sectionId} ref={(el) => (sectionRefs.current.contacto = el)} id="contacto" title="Contacto">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <ContactCard icon={<Mail size={24} />} label="Correo Electrónico" value={portfolioData.contact.email} href={`mailto:${portfolioData.contact.email}`} />
-                    <ContactCard icon={<Linkedin size={24} />} label="LinkedIn" value="Perfil de LinkedIn" href={portfolioData.contact.linkedin} />
-                    <ContactCard icon={<Phone size={24} />} label="Teléfono" value={portfolioData.contact.phone} href={`tel:${portfolioData.contact.phone.replace(/\s+/g, '')}`} />
-                  </div>
-                </Section>
-              );
-            }
-            
-            return null;
-          })}
-      </main>
-    </div>
-  );
-};
-
-// Main App Component with CVProvider
-const App = () => {
-  return (
-    <CVProvider>
-      <CVWithBuilder />
-    </CVProvider>
   );
 };
 
