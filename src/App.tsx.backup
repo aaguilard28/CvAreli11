@@ -2,15 +2,10 @@ import { useState, useEffect, useLayoutEffect, useRef, forwardRef, ReactNode } f
 import {
   User, Briefcase, GraduationCap, Globe, Zap, Brain, Landmark, FileText, HardHat, Users,
   BarChart, Gem, Lightbulb, Info, Settings, Bot, Handshake, BookOpen, Flag, LayoutDashboard,
-  CheckCircle, HeartHandshake, Phone, Mail, Linkedin, ArrowRight, Sun, Moon, Download, Edit3
+  CheckCircle, HeartHandshake, Phone, Mail, Linkedin, ArrowRight, Sun, Moon, Download
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-
-// CV Builder imports
-import { CVProvider, useCVContext } from './modules/cv/CVProvider';
-import { CVBuilder } from './modules/cv/components/CVBuilder';
-import { pdfExportService } from './modules/cv/export/pdfExport';
 
 /* ================== DATA (textos restaurados tal cual capturas) ================== */
 const portfolioData = {
@@ -254,7 +249,6 @@ const Navigation = ({
   isDark,
   toggleDark,
   onDownloadPDF,
-  onShowBuilder,
 }: {
   activeSection: string;
   onNavigate: (id: string) => void;
@@ -263,7 +257,6 @@ const Navigation = ({
   isDark: boolean;
   toggleDark: () => void;
   onDownloadPDF: () => void;
-  onShowBuilder?: () => void;
 }) => {
   const sections = [
     { id: 'perfil', title: 'Perfil Profesional', icon: <User size={20} /> },
@@ -302,22 +295,6 @@ const Navigation = ({
                 >
                   {isDark ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
-                {onShowBuilder && (
-                  <div className="relative group">
-                    <button
-                      type="button"
-                      onClick={onShowBuilder}
-                      className="w-9 h-9 rounded-full border border-white/30 flex items-center justify-center hover:bg-white/10 transition focus:outline-none bg-blue-600/20"
-                      aria-label="Editar CV"
-                      title="Editar CV"
-                    >
-                      <Edit3 size={18} />
-                    </button>
-                    <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1 opacity-0 group-hover:opacity-100 transition bg-white/90 text-[#1e2a38] dark:bg-slate-700 dark:text-white text-xs font-medium px-2 py-1 rounded shadow">
-                      Editar CV
-                    </span>
-                  </div>
-                )}
                 <div className="relative group">
                   <button
                     type="button"
@@ -347,17 +324,6 @@ const Navigation = ({
             >
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            {onShowBuilder && (
-              <button
-                type="button"
-                onClick={onShowBuilder}
-                className="w-8 h-8 rounded-full border border-white/30 bg-blue-600/20 flex items-center justify-center hover:bg-white/10 transition focus:outline-none"
-                aria-label="Editar CV"
-                title="Editar CV"
-              >
-                <Edit3 size={16} />
-              </button>
-            )}
             <button
               type="button"
               onClick={onDownloadPDF}
@@ -609,240 +575,360 @@ const ContactCard = ({
     <div className="block cursor-default">{inner}</div>
   );
 };
-
-// CV Builder Integration - CV Component using context data
-const CVWithBuilder = () => {
-  const { currentVersion, sections } = useCVContext();
-  const [showCVBuilder, setShowCVBuilder] = useState(false);
-
-  // Use current version data if available, otherwise use default portfolioData
-  const cvData = currentVersion?.data || portfolioData;
-  
-  // Filter sections based on configuration
-  const enabledSections = sections.filter(section => section.enabled);
-
-  return (
-    <>
-      <CVComponent 
-        portfolioData={cvData} 
-        enabledSections={enabledSections}
-        onShowBuilder={() => setShowCVBuilder(true)}
-      />
-      {showCVBuilder && (
-        <CVBuilder 
-          onClose={() => setShowCVBuilder(false)} 
-          isDark={document.documentElement.classList.contains('dark')}
-        />
-      )}
-    </>
-  );
-};
-
-// Modified CV Component to accept dynamic data
-const CVComponent = ({ 
-  portfolioData, 
-  enabledSections, 
-  onShowBuilder 
-}: { 
-  portfolioData: any; 
-  enabledSections: any[]; 
-  onShowBuilder: () => void; 
-}) => {
+/* ================== APP ================== */
+const App = () => {
   const [activeSection, setActiveSection] = useState('perfil');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isDark, setIsDark] = useState(false);
-  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
+  // Modo claro por defecto
+  const [isDark, setIsDark] = useState<boolean>(false);
   useLayoutEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setIsDark(savedTheme === 'dark');
-      if (savedTheme === 'dark') {
-        document.documentElement.classList.add('dark');
-      }
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setIsDark(true);
-      document.documentElement.classList.add('dark');
-    }
+    document.documentElement.classList.remove('dark');
+    try { localStorage.setItem('theme', 'light'); } catch {}
   }, []);
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+    try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch {}
+  }, [isDark]);
+  const toggleDark = () => setIsDark(d => !d);
 
-  const toggleDark = () => {
-    const newIsDark = !isDark;
-    setIsDark(newIsDark);
-    if (newIsDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  };
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
 
-  const handleDownloadPDF = async () => {
-    try {
-      await pdfExportService.exportPDF();
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      alert('Error al generar el PDF. Por favor, intenta nuevamente.');
-    }
-  };
-
-  const navigateToSection = (sectionId: string) => {
-    const element = sectionRefs.current[sectionId];
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-      setActiveSection(sectionId);
-    }
+  const handleNavigate = (sectionId: string) => {
+    const el = sectionRefs.current[sectionId];
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setIsMobileMenuOpen(false);
   };
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
+  // Activo en menú
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.isIntersecting && setActiveSection(e.target.id)),
+      { threshold: 0.3, rootMargin: '-20px 0px -50% 0px' }
+    );
+    Object.values(sectionRefs.current).forEach((s) => s && observer.observe(s));
+    return () => observer.disconnect();
+  }, []);
+
+  // --- DESCARGA PDF (paginación por anclas, sin huecos ni cortes) ---
+  const isDownloadingRef = useRef(false);
+
+  const handleDownloadPDF = async () => {
+    if (isDownloadingRef.current) return;
+    isDownloadingRef.current = true;
+
+    const root = wrapperRef.current as HTMLElement | null;
+    if (!root) { isDownloadingRef.current = false; return; }
+
+    // Congelar UI sin romper layout
+    const wasDark = document.documentElement.classList.contains('dark');
+
+    const freeze = document.createElement('style');
+    freeze.id = 'pdf-freeze';
+    freeze.textContent = `
+      *{animation:none!important;transition:none!important}
+      html,body{scroll-behavior:auto!important}
+      .app-nav{position:static!important;height:auto!important}
+    `;
+    document.head.appendChild(freeze);
+
+    // eliminar padding-top del compensador de la nav solo durante captura
+    const offsetPadEl =
+      Array.from(root.querySelectorAll<HTMLElement>('*')).find(el => el.classList?.contains('pt-14')) || null;
+    const prevPadTop = offsetPadEl?.style.paddingTop ?? '';
+    if (offsetPadEl) offsetPadEl.style.paddingTop = '0px';
+
+    // expandir colapsables
+    const collapsibles = Array.from(root.querySelectorAll<HTMLElement>('[data-collapsible-content="true"]'));
+    const prevMax = collapsibles.map(el => el.style.maxHeight);
+    collapsibles.forEach(el => { el.style.maxHeight = `${el.scrollHeight}px`; });
+
+    // esperar fuentes e imágenes
+    const waitFonts = async () => { try { /* @ts-ignore */ if (document.fonts?.ready) await (document.fonts as any).ready; } catch {} };
+    const whenImg = (img: HTMLImageElement) => new Promise<void>(res => {
+      if (img.complete && img.naturalWidth > 0) return res();
+      img.onload = () => res(); img.onerror = () => res();
+    });
+    const waitImages = async () => {
+      const imgs = Array.from(root.querySelectorAll('img')) as HTMLImageElement[];
+      await Promise.all(imgs.map(whenImg));
+    };
+    await waitFonts(); await waitImages(); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    // color de fondo real según tema/estilos
+    const computeBg = () => {
+      if (wasDark) return getComputedStyle(document.documentElement).backgroundColor || '#0b1220';
+      let node: HTMLElement | null = root;
+      while (node) {
+        const bg = getComputedStyle(node).backgroundColor;
+        if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') return bg;
+        node = node.parentElement;
+      }
+      return '#ffffff';
+    };
+    const bgColor = computeBg();
+
+    const totalWidth  = Math.max(root.scrollWidth,  root.offsetWidth,  root.clientWidth);
+    const totalHeight = Math.max(root.scrollHeight, root.offsetHeight, root.clientHeight);
+
+    const scale = Math.min(2.4, (window.devicePixelRatio || 1) * 1.5);
+    const canvas = await html2canvas(root, {
+      backgroundColor: bgColor,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      scale,
+      windowWidth: totalWidth,
+      windowHeight: totalHeight,
+      scrollX: 0,
+      scrollY: 0
+    });
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true } as any);
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+
+    // px de canvas que equivalen a una página completa
+    const pageHeightPx = Math.floor(canvas.width * (pageH / pageW));
+
+    // anclas seguras
+    const rootRect = root.getBoundingClientRect();
+    const pickY = (el: Element) => {
+      const r = (el as HTMLElement).getBoundingClientRect();
+      const yDom = r.top - rootRect.top;               // relativo al root (px DOM)
+      const scaleY = canvas.height / totalHeight;      // pxCanvas / pxDOM
+      return Math.max(0, Math.round(yDom * scaleY));   // en px del canvas
+    };
+    const anchors = new Set<number>([0, canvas.height]);
+    root.querySelectorAll('.cv-section, .cv-break, li, h2, h3').forEach(el => anchors.add(pickY(el)));
+    const sorted = Array.from(anchors).sort((a,b)=>a-b);
+
+    const minAdvance = Math.round(40 * scale);
+    const titleGuard = Math.round(32 * scale);
+
+    let y = 0;
+    let pageIndex = 0;
+
+    while (y < canvas.height) {
+      const rawEnd = Math.min(canvas.height, y + pageHeightPx);
+      const candidates = sorted.filter(v => v > y + minAdvance && v <= rawEnd);
+      let end = rawEnd;
+      if (candidates.length) {
+        let chosen = candidates[candidates.length - 1];
+        const prev = sorted.filter(v => v <= chosen).pop() ?? y;
+        if (chosen - prev < titleGuard && candidates.length > 1) {
+          chosen = candidates[candidates.length - 2];
+        }
+        end = Math.max(chosen, y + minAdvance);
+      }
+
+      const sliceH = Math.max(1, end - y);
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = canvas.width;
+      sliceCanvas.height = sliceH;
+      const ctx = sliceCanvas.getContext('2d', { willReadFrequently: true })!;
+      ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+
+      const imgData = sliceCanvas.toDataURL('image/jpeg', 0.95);
+      if (pageIndex > 0) pdf.addPage('a4', 'portrait');
+      pdf.addImage(imgData, 'JPEG', 0, 0, pageW, (pageW * sliceH) / canvas.width, undefined, 'FAST');
+
+      pageIndex++;
+      y = end;
+    }
+
+    const filename = 'CV_Areli_Aguilar.pdf';
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (/\bMacintosh\b/.test(ua) && 'ontouchend' in document);
+    try {
+      if (isIOS) {
+        const dataUrl = pdf.output('dataurlstring');
+        window.open(dataUrl, '_blank');
+      } else {
+        pdf.save(filename);
+      }
+    } finally {
+      // restaurar UI
+      collapsibles.forEach((el, i) => (el.style.maxHeight = prevMax[i] ?? '0px'));
+      if (offsetPadEl) offsetPadEl.style.paddingTop = prevPadTop;
+      document.getElementById('pdf-freeze')?.remove();
+      if (wasDark) document.documentElement.classList.add('dark');
+      isDownloadingRef.current = false;
+    }
   };
 
+  // --- IMPRESIÓN NATIVA (abre colapsables) ---
   useEffect(() => {
-    const handleScroll = () => {
-      let current = 'perfil';
-      
-      Object.entries(sectionRefs.current).forEach(([id, element]) => {
-        if (element) {
-          const rect = element.getBoundingClientRect();
-          if (rect.top <= 200) {
-            current = id;
-          }
-        }
-      });
-      
-      setActiveSection(current);
+    const before = () => {
+      document.body.classList.add('printing');
+      const root = wrapperRef.current;
+      if (!root) return;
+      const nodes = Array.from(root.querySelectorAll('[data-collapsible-content="true"]')) as HTMLElement[];
+      nodes.forEach((el) => { (el as any).dataset.prevMaxHeight = el.style.maxHeight || ''; el.style.maxHeight = `${el.scrollHeight}px`; });
+      // reflow
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _ = document.body.offsetHeight;
+    };
+    const after = () => {
+      document.body.classList.remove('printing');
+      const root = wrapperRef.current;
+      if (!root) return;
+      const nodes = Array.from(root.querySelectorAll('[data-collapsible-content="true"]')) as HTMLElement[];
+      nodes.forEach((el) => { el.style.maxHeight = (el as any).dataset.prevMaxHeight ?? '0px'; delete (el as any).dataset.prevMaxHeight; });
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('beforeprint', before);
+    window.addEventListener('afterprint', after);
+    return () => {
+      window.removeEventListener('beforeprint', before);
+      window.removeEventListener('afterprint', after);
+    };
   }, []);
 
   return (
-    <div className="cv-container min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div
+      ref={wrapperRef}
+      id="cv-container"
+      className="min-h-screen bg-gray-50 dark:bg-[#0b1220] font-sans antialiased text-gray-800 dark:text-gray-100"
+    >
+      <style>{`
+      .typing-cursor{display:inline-block;animation:blink-caret .75s step-end infinite;opacity:1}
+      @keyframes blink-caret{from,to{opacity:0}50%{opacity:1}}
+
+      @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+      .marquee-container{display:flex;height:100%;width:max-content;animation:marquee 30s linear infinite;will-change:transform}
+      .marquee-container.paused{animation-play-state:paused}
+      .marquee-item{flex-shrink:0;display:flex;align-items:center;white-space:nowrap;padding:0 1.75rem;font-family:'Inter',sans-serif;font-size:1.1rem;font-weight:400;color:#4a688b}
+      @media (max-width:1023px){.marquee-item{font-size:.95rem;padding:0 1rem}}
+      .marquee-item .icon{color:#d97706;margin-right:.5rem;display:inline-block;vertical-align:middle}
+
+      .skill-chip{background-color:#e5e7eb;color:#374151;border:1px solid #d1d5db}
+      .dark .skill-chip{background-color:#334155;color:#f8fafc;border-color:#475569}
+      .dark .competencia-btn{color:#fff!important;background-color:rgba(255,255,255,.08)}
+      .dark .competencia-btn:hover{background-color:rgba(255,255,255,.16)}
+      .tooltip-content{background-color:#a8c0d9;color:#0f172a;border:1px solid #93a8c3}
+      .dark .tooltip-content{background-color:#475569;color:#fff;border:1px solid #94A3B8}
+
+      @media (min-width:1024px){
+        .printing .app-nav, .capture-pdf .app-nav{position:static!important;height:auto!important}
+      }
+      `}</style>
+
       <Navigation
         activeSection={activeSection}
-        onNavigate={navigateToSection}
+        onNavigate={handleNavigate}
         isMobileMenuOpen={isMobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
+        toggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         isDark={isDark}
         toggleDark={toggleDark}
         onDownloadPDF={handleDownloadPDF}
-        onShowBuilder={onShowBuilder}
       />
 
-      <main className="lg:ml-80 p-6 lg:p-12 space-y-12">
-        {/* Only render enabled sections */}
-        {enabledSections
-          .sort((a, b) => a.order - b.order)
-          .map((sectionConfig) => {
-            const sectionId = sectionConfig.id;
-            
-            if (sectionId === 'perfil') {
-              return (
-                <Section key={sectionId} ref={(el) => (sectionRefs.current.perfil = el)} id="perfil" title="Perfil Profesional">
-                  <div className="space-y-6">
-                    {portfolioData.profile.map((item: any, index: number) => (
-                      <div key={index} className="flex items-start gap-6 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-                        <div className="flex-shrink-0 p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
-                          <div className="text-blue-600 dark:text-blue-400">
-                            {item.icon}
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                            {item.text}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+      {/* Carrusel + título móvil */}
+      <div className="pt-14 lg:pt-6 lg:ml-80">
+        <div className="hidden lg:block h-2"></div>
+        <MarqueeCarousel />
+        <div className="px-4 pt-2 block lg:hidden">
+          <TypingEffect text="CURRICULUM VITAE" />
+        </div>
+      </div>
+
+      <main className="lg:ml-80 p-6 lg:p-8">
+        <Section ref={(el) => (sectionRefs.current.perfil = el)} id="perfil" title="Perfil Profesional">
+          {portfolioData.profile.map((item, index) => (
+            <ProfileCard key={index} icon={item.icon} text={item.text} />
+          ))}
+        </Section>
+
+        <Section ref={(el) => (sectionRefs.current.habilidades = el)} id="habilidades" title="Habilidades Destacadas">
+          <div className="space-y-6">
+            <SkillsCard title="Experiencia Ejecutiva" icon={<Briefcase size={24} />} iconColor="#d97706">
+              <p className="text-gray-700 dark:text-gray-200">
+                Más de 15 años de experiencia realizando gestiones administrativas clave a nivel ejecutivo para la alta dirección.
+              </p>
+            </SkillsCard>
+
+            <SkillsCard title="Habilidades de Gestión Gerencial" icon={<LayoutDashboard size={24} />} iconColor="#d97706">
+              <div className="grid md:grid-cols-2 gap-4">
+                {portfolioData.skills.management.map((skill, i) => (
+                  <div key={i} className="cv-break avoid-break flex items-start text-gray-700 dark:text-gray-200">
+                    <CheckCircle size={16} className="text-[#4a688b] dark:text-[#93c5fd] mr-2 flex-shrink-0 mt-1" />
+                    <span>{skill}</span>
                   </div>
-                  <MarqueeCarousel />
-                </Section>
-              );
-            }
-            
-            if (sectionId === 'habilidades') {
-              return (
-                <Section key={sectionId} ref={(el) => (sectionRefs.current.habilidades = el)} id="habilidades" title="Habilidades Destacadas">
-                  <div className="grid lg:grid-cols-2 gap-8">
-                    <SkillsTooltips skills={Object.keys(portfolioData.skills.tooltips)} tooltips={portfolioData.skills.tooltips} />
-                    <ManagementSkills skills={portfolioData.skills.management} />
+                ))}
+              </div>
+            </SkillsCard>
+
+            <SkillsCard title="Competencias" icon={<Gem size={24} />} iconColor="#d97706">
+              <p className="text-gray-700 dark:text-gray-200 mb-4">- Desliza el cursor sobre cada competencia para conocer más detalles.</p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(portfolioData.skills.tooltips).map(([label, tooltip], idx) => (
+                  <div key={idx} className="relative group">
+                    <span className="skill-chip competencia-btn px-3 py-1 rounded-full text-sm cursor-help group-hover:shadow-md transition">
+                      {label}
+                      <Info size={12} className="inline-block ml-1 opacity-60 group-hover:opacity-100 transition-opacity" />
+                    </span>
+                    <div className="tooltip-content absolute z-10 hidden group-hover:block font-medium text-xs p-3 shadow-xl rounded-md w-64 top-full mt-1 left-1/2 -translate-x-1/2">
+                      {tooltip}
+                    </div>
                   </div>
-                </Section>
-              );
-            }
-            
-            if (sectionId === 'experiencia') {
-              return (
-                <Section key={sectionId} ref={(el) => (sectionRefs.current.experiencia = el)} id="experiencia" title="Experiencia Profesional">
-                  {portfolioData.experience.map((exp: any, index: number) => (
-                    <CollapsibleExperience key={index} date={exp.date} title={exp.title} company={exp.company} location={exp.location} description={exp.description} icon={exp.icon} />
-                  ))}
-                </Section>
-              );
-            }
-            
-            if (sectionId === 'proyectos') {
-              return (
-                <Section key={sectionId} ref={(el) => (sectionRefs.current.proyectos = el)} id="proyectos" title="Proyectos de Innovación y Transformación Digital">
-                  {portfolioData.projects.map((project: any, index: number) => (
-                    <CollapsibleExperience key={index} date={project.date} title={project.title} description={project.description} icon={project.icon} />
-                  ))}
-                </Section>
-              );
-            }
-            
-            if (sectionId === 'educacion') {
-              return (
-                <Section key={sectionId} ref={(el) => (sectionRefs.current.educacion = el)} id="educacion" title="Educación Académica">
-                  {portfolioData.education.map((edu: any, index: number) => (
-                    <EducationCard key={index} icon={edu.icon} iconColor={edu.iconColor} title={edu.title} period={edu.period} description={edu.description} />
-                  ))}
-                  <OtherStudies items={portfolioData.otherStudies} />
-                </Section>
-              );
-            }
-            
-            if (sectionId === 'idiomas') {
-              return (
-                <Section key={sectionId} ref={(el) => (sectionRefs.current.idiomas = el)} id="idiomas" title="Idiomas">
-                  <div className="flex flex-col md:flex-row gap-4">
-                    {portfolioData.languages.map((lang: any, index: number) => (
-                      <LanguageCard key={index} language={lang.language} proficiency={lang.proficiency} />
-                    ))}
-                  </div>
-                </Section>
-              );
-            }
-            
-            if (sectionId === 'contacto') {
-              return (
-                <Section key={sectionId} ref={(el) => (sectionRefs.current.contacto = el)} id="contacto" title="Contacto">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <ContactCard icon={<Mail size={24} />} label="Correo Electrónico" value={portfolioData.contact.email} href={`mailto:${portfolioData.contact.email}`} />
-                    <ContactCard icon={<Linkedin size={24} />} label="LinkedIn" value="Perfil de LinkedIn" href={portfolioData.contact.linkedin} />
-                    <ContactCard icon={<Phone size={24} />} label="Teléfono" value={portfolioData.contact.phone} href={`tel:${portfolioData.contact.phone.replace(/\s+/g, '')}`} />
-                  </div>
-                </Section>
-              );
-            }
-            
-            return null;
-          })}
+                ))}
+              </div>
+            </SkillsCard>
+
+            <SkillsCard title="Enfoque de Colaboración" icon={<HeartHandshake size={24} />} iconColor="#d97706">
+              <p className="text-gray-700 dark:text-gray-200">
+                Habilidades destacadas para generar confianza, facilitar la cooperación y fomentar un ambiente de alto rendimiento.
+              </p>
+            </SkillsCard>
+          </div>
+        </Section>
+
+        <Section ref={(el) => (sectionRefs.current.experiencia = el)} id="experiencia" title="Experiencia Profesional">
+          {portfolioData.experience.map((exp, index) => (
+            <CollapsibleExperience
+              key={index}
+              date={exp.date}
+              title={exp.title}
+              company={exp.company}
+              location={(exp as any).location}
+              description={exp.description}
+              icon={exp.icon}
+            />
+          ))}
+        </Section>
+
+        <Section ref={(el) => (sectionRefs.current.proyectos = el)} id="proyectos" title="Proyectos de Innovación y Transformación Digital">
+          {portfolioData.projects.map((project, index) => (
+            <CollapsibleExperience key={index} date={project.date} title={project.title} description={project.description} icon={project.icon} />
+          ))}
+        </Section>
+
+        <Section ref={(el) => (sectionRefs.current.educacion = el)} id="educacion" title="Educación Académica">
+          {portfolioData.education.map((edu, index) => (
+            <EducationCard key={index} icon={edu.icon} iconColor={(edu as any).iconColor} title={edu.title} period={edu.period} description={edu.description} />
+          ))}
+          <OtherStudies items={portfolioData.otherStudies} />
+        </Section>
+
+        <Section ref={(el) => (sectionRefs.current.idiomas = el)} id="idiomas" title="Idiomas">
+          <div className="flex flex-col md:flex-row gap-4">
+            {portfolioData.languages.map((lang, index) => (
+              <LanguageCard key={index} language={lang.language} proficiency={lang.proficiency} />
+            ))}
+          </div>
+        </Section>
+
+        <Section ref={(el) => (sectionRefs.current.contacto = el)} id="contacto" title="Contacto">
+          <div className="grid md:grid-cols-2 gap-4">
+            <ContactCard icon={<Mail size={24} />} label="Correo Electrónico" value={portfolioData.contact.email} href={`mailto:${portfolioData.contact.email}`} />
+            <ContactCard icon={<Linkedin size={24} />} label="LinkedIn" value="Perfil de LinkedIn" href={portfolioData.contact.linkedin} />
+            <ContactCard icon={<Phone size={24} />} label="Teléfono" value={portfolioData.contact.phone} href={`tel:${portfolioData.contact.phone.replace(/\s+/g, '')}`} />
+          </div>
+        </Section>
       </main>
     </div>
-  );
-};
-
-// Main App Component with CVProvider
-const App = () => {
-  return (
-    <CVProvider>
-      <CVWithBuilder />
-    </CVProvider>
   );
 };
 
